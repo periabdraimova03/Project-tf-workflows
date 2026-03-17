@@ -34,7 +34,7 @@ jobs:
       - name: Checkout Terraform private repo 
         uses: actions/checkout@v4 
         with: 
-          repository: periabdraimova03/Project-tf-workflows 
+          repository: periabdraimova03/SonarQube-project 
           token: ${{ secrets.GITHUB_TOKEN }} 
           path: terraform-code  
 
@@ -49,19 +49,23 @@ jobs:
           aws-region: ${{ github.event.inputs.region }}
     
       - name: Create tfvars file
-        run: echo "${{ secrets.TFVARS }}" > terraform.tfvars 
+        run: |
+          printf "%s" "${{ secrets.TFVARS }}" > terraform.tfvars
         working-directory: terraform-code
+
+      - name: Debug tfvars
+        run: cat terraform.tfvars
+        working-directory: terraform-code  
 
       - name: Terraform Init
         run: terraform init 
         working-directory: terraform-code
 
-      - name: Terraform Apply
-        if: ${{ github.event.inputs.action == 'apply' }}
-        run: terraform apply -auto-approve
-        working-directory: terraform-code
-
-      - name: Terraform Destroy
-        if: ${{ github.event.inputs.action == 'destroy' }}
-        run: terraform destroy -auto-approve
+      - name: Terraform Apply/Destroy
+        run: |
+          if [[ "${{ github.event.inputs.action }}" == "apply" ]]; then
+            terraform apply -auto-approve
+          else
+            terraform destroy -auto-approve
+          fi
         working-directory: terraform-code
