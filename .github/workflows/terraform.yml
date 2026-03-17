@@ -1,61 +1,69 @@
-name: Terraform
+name: Terraform Deployment
 
 on:
-
   workflow_dispatch:
     inputs:
       action:
-        description: "Select your choice"
+        description: "Select action"
         required: true
         type: choice
         options:
-        - apply
-        - destroy
-
+          - apply
+          - destroy
       region:
-        description: "Select your region"
+        description: "Select AWS region"
         required: true
         type: choice
         options:
-        - us-east-1
-        - us-east-2
-        - us-west-1
-        - us-west-2
+          - us-east-1
+          - us-east-2
+          - us-west-1
+          - us-west-2
 
 jobs:
-  build:
+  terraform:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
 
     steps:
-      - name: Git clone
-        uses: actions/checkout@v4 
 
-      - name: Create tfvars file
-        run: | 
-          echo "${{ vars.TFVARS }}" > terraform.tfvars
-          cat terraform.tfvars  
+      - name: Git clone Terraform repo
+        run: |
+          git clone https://github.com/periabdraimova03/SonarQube-project.git terraform-code
 
-      - name: Install Terraform
+
+      - name: List Terraform files
+        run: ls -R terraform-code
+
+      - name: Create terraform.tfvars
+        if: ${{ secrets.TFVARS }}
+        run: |
+          printf "%s" "${{ secrets.TFVARS }}" > terraform.tfvars
+          cat terraform.tfvars
+        working-directory: terraform-code
+
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6.0.0
+
+      - name: Configure AWS
+        if: ${{ secrets.AWS_ACCESS_KEY_ID && secrets.AWS_SECRET_ACCESS_KEY }}
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ inputs.region }}
-    
-        
-      - name: Terraform Init
-        run: terraform init -backend-config=key="${{ inputs.environment }}"/terraform.tfstate
+          aws-region: ${{ github.event.inputs.region }}
 
+
+      - name: Terraform Init
+        run: terraform init -backend-config="key=${{ github.event.inputs.region }}/terraform.tfstate"
+        working-directory: terraform-code
 
       - name: Terraform Apply/Destroy
         run: |
-          if [[ "${{ inputs.action }}" == "apply" ]]; then
+          if [[ "${{ github.event.inputs.action }}" == "apply" ]]; then
             terraform apply -auto-approve
           else
             terraform destroy -auto-approve
           fi
         working-directory: terraform-code
+        
