@@ -25,18 +25,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.region }}
+    environment: ${{ inputs.environment }}
 
     steps:
-      - name: Checkout workflow repo 
-        uses: actions/checkout@v4
-
-      - name: Checkout Terraform private repo 
+      - name: Git clone
         uses: actions/checkout@v4 
-        with: 
-          repository: periabdraimova03/SonarQube-project 
-          token: ${{ secrets.GITHUB_TOKEN }} 
-          path: terraform-code  
+
+      - name: Create tfvars file
+        run: | 
+          echo "${{ vars.TFVARS }}" > terraform.tfvars
+          cat terraform.tfvars  
 
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v3
@@ -46,24 +44,16 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ github.event.inputs.region }}
+          aws-region: ${{ inputs.region }}
     
-      - name: Create tfvars file
-        run: |
-          printf "%s" "${{ secrets.TFVARS }}" > terraform.tfvars
-        working-directory: terraform-code
-
-      - name: Debug tfvars
-        run: cat terraform.tfvars
-        working-directory: terraform-code  
-
+        
       - name: Terraform Init
-        run: terraform init 
-        working-directory: terraform-code
+        run: terraform init -backend-config=key="${{ inputs.environment }}"/terraform.tfstate
+
 
       - name: Terraform Apply/Destroy
         run: |
-          if [[ "${{ github.event.inputs.action }}" == "apply" ]]; then
+          if [[ "${{ inputs.action }}" == "apply" ]]; then
             terraform apply -auto-approve
           else
             terraform destroy -auto-approve
