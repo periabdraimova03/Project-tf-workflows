@@ -28,8 +28,9 @@ jobs:
     environment: ${{ github.event.inputs.region }}
 
     steps:
-      - name: Git clone Terraform repo
-        run: git clone https://github.com/periabdraimova03/SonarQube-project.git terraform-code
+      - name: Git clone private Terraform repo
+        run: |
+          git clone https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/periabdraimova03/SonarQube-project.git terraform-code
 
       - name: List Terraform files
         run: ls -R terraform-code  
