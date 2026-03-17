@@ -19,32 +19,24 @@ on:
         options:
         - us-east-1
         - us-east-2
-
-      ami_id:
-        description: "Provide AMI id"
-        required: true
-        type: string
-
-      instance_type:
-        description: "Provide instance type"
-        required: true
-        type: string
+        - us-west-1
+        - us-west-2
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.region }}
 
     steps:
-      - name: Git clone
+      - name: Checkout workflow repo 
         uses: actions/checkout@v4
 
-      - name: Create tfvars file
-        run: |
-          cat <<EOF > terraform.tfvars
-          region = "${{ inputs.region }}"
-          ami_id = "${{ inputs.ami_id }}"
-          instance_type = "${{ inputs.instance_type }}"
-          EOF
+      - name: Checkout Terraform private repo 
+        uses: actions/checkout@v4 
+        with: 
+          repository: periabdraimova03/Project-tf-workflows 
+          token: ${{ secrets.GITHUB_TOKEN }} 
+          path: terraform-code  
 
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v3
@@ -54,7 +46,12 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ github.event.inputs.region }}
+    
+      - name: Create tfvars file
+        run: |
+          echo "${{ secrets.TFVARS }}" > terraform.tfvars 
+          working-directory: terraform-code
 
       - name: Terraform Init
         run: terraform init -backend-config=key="${{ inputs.region }}"/terraform.tfstate
@@ -66,4 +63,4 @@ jobs:
             terraform apply -auto-approve
           else
             terraform destroy -auto-approve
-          fi
+          fi 
