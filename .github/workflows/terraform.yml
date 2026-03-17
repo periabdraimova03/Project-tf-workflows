@@ -49,14 +49,13 @@ jobs:
           aws-region: ${{ github.event.inputs.region }}
     
       - name: Create tfvars file
-        run: |
-          echo "${{ secrets.TFVARS }}" > terraform.tfvars 
+        run: echo "${{ secrets.TFVARS }}" > terraform.tfvars 
         working-directory: terraform-code
 
       - name: Terraform Init
         run: terraform init 
         working-directory: terraform-code
-        
+
       - name: Terraform Apply
         if: ${{ github.event.inputs.action == 'apply' }}
         run: terraform apply -auto-approve
