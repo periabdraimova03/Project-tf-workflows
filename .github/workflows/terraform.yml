@@ -1,0 +1,69 @@
+name: Terraform
+
+on:
+
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Select your choice"
+        required: true
+        type: choice
+        options:
+        - apply
+        - destroy
+
+      region:
+        description: "Select your region"
+        required: true
+        type: choice
+        options:
+        - us-east-1
+        - us-east-2
+
+      ami_id:
+        description: "Provide AMI id"
+        required: true
+        type: string
+
+      instance_type:
+        description: "Provide instance type"
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Git clone
+        uses: actions/checkout@v4
+
+      - name: Create tfvars file
+        run: |
+          cat <<EOF > terraform.tfvars
+          region = "${{ inputs.region }}"
+          ami_id = "${{ inputs.ami_id }}"
+          instance_type = "${{ inputs.instance_type }}"
+          EOF
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6.0.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Terraform Init
+        run: terraform init -backend-config=key="${{ inputs.region }}"/terraform.tfstate
+
+      - name: Terraform Apply or Destroy
+        run: |
+          if [[ "${{ inputs.action }}" == "apply" ]]
+          then
+            terraform apply -auto-approve
+          else
+            terraform destroy -auto-approve
+          fi
