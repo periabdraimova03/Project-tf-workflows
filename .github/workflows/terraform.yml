@@ -32,8 +32,10 @@ jobs:
         run: |
           git clone https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/periabdraimova03/SonarQube-project.git terraform-code
 
-      - name: Verify clone 
-        run: ls -R terraform-code 
+      - name: Check structure
+        run: |
+          pwd
+          ls -R 
 
       - name: Create terraform.tfvars
         run: |
