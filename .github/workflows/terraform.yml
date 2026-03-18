@@ -33,18 +33,25 @@ jobs:
           git clone https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/periabdraimova03/SonarQube-project.git terraform-code
 
       - name: Verify clone 
-        run: ls -R terraform-code  
+        run: ls -R terraform-code 
 
-      - name: Create terraform.tfvars (FORCED FIX)
+      - name: Create terraform.tfvars
         run: |
-          cat <<EOF > terraform.tfvars
-          region="us-east-1"
-          instance_type="t3.large"
-          key_name="project-key"
-          vpc_cidr="10.0.0.0/16"
-          subnet_cidrs=["10.0.1.0/24","10.0.2.0/24","10.0.3.0/24"]
-          EOF
-        working-directory: terraform-code  
+          printf "%s" "${{ secrets.TFVARS }}" > terraform.tfvars
+          echo "----- TFVARS CONTENT -----"
+          cat terraform.tfvars
+        working-directory: terraform-code   
+
+      #- name: Create terraform.tfvars (FORCED FIX)
+      #  run: |
+       #   cat <<EOF > terraform.tfvars
+       #   region="us-east-1"
+       #   instance_type="t3.large"
+       #   key_name="project-key"
+       #   vpc_cidr="10.0.0.0/16"
+       #   subnet_cidrs=["10.0.1.0/24","10.0.2.0/24","10.0.3.0/24"]
+       #   EOF
+       # working-directory: terraform-code  
 
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v3
